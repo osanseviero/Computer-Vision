@@ -26,7 +26,9 @@ var emojis = [ 128528, 9786, 128515, 128524, 128527, 128521, 128535, 128539, 128
 var targetEmoji = 0;
 
 // Score to keep track
-var score = 0;
+var correct = 0;
+var total = 0;
+var timeout;
 
 // Update target emoji being displayed by supplying a unicode value
 function setTargetEmoji(code) {
@@ -42,7 +44,7 @@ function toUnicode(c) {
 
 // Update score being displayed
 function setScore() {
-  $("#score").html("Score: " + score);
+  $("#score").html("Score: " + correct + " / " + total);
 }
 
 // Display log messages and tracking results
@@ -67,6 +69,7 @@ function onStop() {
   if (detector && detector.isRunning) {
     detector.removeEventListener();
     detector.stop();  // stop detector
+    clearTimeout(timeout);
   }
 };
 
@@ -178,19 +181,45 @@ function randomEmoji() {
   return emojis[Math.floor(Math.random()*emojis.length)];
 }
 
-// Pick a new emoji and resets the score
-function initializeGame() {
-  targetEmoji = randomEmoji();
-  setTargetEmoji(targetEmoji);
-  score = 0;
-  setScore();
+// Resets countdown
+function startCountdown() {
+  clearTimeout(timeout);
+  timeout= setTimeout(resetEmoji, 5000);
 }
 
-// Show an emoji and 
+// Select a new random emoji
+function selectTargetEmoji() {
+  targetEmoji = randomEmoji();
+  setTargetEmoji(targetEmoji);
+}
+
+// Pick a new emoji and resets the score
+function initializeGame() {
+  selectTargetEmoji();
+
+  // Initialize scores
+  correct = 0;
+  total = 0;
+  setScore();
+
+  // Initialize the timeout to run
+  startCountdown();
+}
+
+// Selects a new emoji if haven't been able to mimic
+function resetEmoji() {
+  // Set new emoji and increase the total
+  selectTargetEmoji();
+  total = total + 1; 
+  setScore();
+  startCountdown();
+}
+
+// Show an emoji and check if it matches face
 function mimicMe(canvas, img, face) {
+  // Check if there is no emoji
   if (targetEmoji === 0) {
     initializeGame();
-    setScore();
   }
 
   // Check dominant emoji
@@ -198,9 +227,13 @@ function mimicMe(canvas, img, face) {
 
   // Check if face match target
   if (emoji === targetEmoji) {
-    score = score + 1;
-    targetEmoji = randomEmoji();
-    setTargetEmoji(targetEmoji);
-    setScore();
+    // Increase score
+    correct = correct + 1;
+
+    // Set new timeout
+    startCountdown();
+
+    // Reset the emoji
+    resetEmoji();
   }
 }
